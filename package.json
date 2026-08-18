@@ -1,0 +1,21 @@
+{
+  "name": "carlo-tano-portfolio-tests",
+  "version": "1.0.0",
+  "description": "Playwright end-to-end test automation framework for the carlo-tano-portfolio site (https://yantano.github.io/carlo-tano-portfolio/)",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "test:chromium": "playwright test --project=chromium",
+    "test:mobile": "playwright test --project=mobile-chrome --project=mobile-safari",
+    "test:debug": "playwright test --debug",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install --with-deps"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.0",
+    "@axe-core/playwright": "^4.10.0",
+    "@types/node": "^22.7.0",
+    "typescript": "^5.6.0"
+  }
+}
