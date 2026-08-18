@@ -6,15 +6,8 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Nightly run at 02:00 UTC to catch the live deployed site drifting
-    # (e.g. a broken outbound project link) even with no code changes.
     - cron: '0 2 * * *'
   workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
 
 jobs:
   test:
@@ -40,34 +33,10 @@ jobs:
       - name: Run Playwright tests
         run: npx playwright test
 
-      # Always keep the raw report as a downloadable build artifact
-      # (works even on PRs / failed runs, retained for 14 days).
-      - name: Upload HTML report as build artifact
+      - name: Upload HTML report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
-
-      # Additionally, package the report for GitHub Pages so it has a
-      # permanent public URL. Only meaningful on main, so it only runs there.
-      - name: Upload report for GitHub Pages
-        if: always() && github.ref == 'refs/heads/main'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: playwright-report/
-
-  # Separate job: takes the Pages artifact from the job above and
-  # actually publishes it. Needs Settings -> Pages -> Source = "GitHub Actions".
-  deploy-report:
-    if: always() && github.ref == 'refs/heads/main'
-    needs: test
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
