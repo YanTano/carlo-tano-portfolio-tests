@@ -1,96 +1,159 @@
-# Carlo Tano Portfolio — Playwright Test Suite
+# Carlo Tano Portfolio — QA Automation Framework
 
-[![Playwright Tests](https://github.com/YanTano/carlo-tano-portfolio-tests/actions/workflows/playwright.yml/badge.svg)](https://github.com/YanTano/carlo-tano-portfolio-tests/actions/workflows/playwright.yml)
+## Overview
 
-End-to-end automated test framework for [yantano.github.io/carlo-tano-portfolio](https://yantano.github.io/carlo-tano-portfolio/)
-(my portfolio site), written in TypeScript with [Playwright](https://playwright.dev). Built as a
-real, runnable example of how I structure an automation framework: Page Object Model, fixtures,
-cross-browser and cross-viewport coverage, and CI on every push.
+A professional Playwright test automation framework for the Carlo Tano
+portfolio website. It covers smoke, functional, negative, regression,
+navigation, form-validation, responsive, and basic-accessibility testing
+using the Page Object Model.
 
-## Why test your own portfolio?
+## Application Under Test
 
-It's a real target I have full permission and context to test — running automation against
-sites you don't own can violate their terms of service or the law, even when well-intentioned.
-Testing a live site I control also means every spec here maps to a real user flow: theme
-switching, the contact form, the AI chat widget, outbound project links, and responsive layout.
+- **Live URL:** https://yantano.github.io/carlo-tano-portfolio/
+- **Source Repository:** https://github.com/YanTano/carlo-tano-portfolio
 
-## Stack
+The site under test is a single-page, static HTML/Tailwind/Three.js
+portfolio (no backend of its own), hosted on GitHub Pages. This
+automation project is intentionally kept **separate** from the
+application source — it does not modify or depend on the site's repo.
 
-| Layer | Tool |
+## Testing Framework
+
+- [Playwright Test](https://playwright.dev/) (JavaScript)
+- Node.js
+- GitHub Actions (CI/CD)
+- Page Object Model (POM)
+- JSON test data
+
+## Test Coverage
+
+| Area | Covered |
 |---|---|
-| Test runner | Playwright Test |
-| Language | TypeScript |
-| Pattern | Page Object Model + custom fixtures |
-| Accessibility | axe-core |
-| CI | GitHub Actions (push, PR, nightly cron) |
-| Browsers | Chromium, Firefox, WebKit, + mobile Chrome/Safari emulation |
+| Smoke (site up, title, hero, navbar, sections, footer) | ✅ |
+| Navigation (desktop + mobile, anchors, CTAs, resume, socials) | ✅ |
+| Contact form — functional (valid data, EmailJS request stubbed) | ✅ |
+| Contact form — negative (empty/invalid fields, native HTML5 validation) | ✅ |
+| Dynamically-rendered sections (skills/projects/experience/services/testimonials) | ✅ |
+| "Carlo AI" chat widget (open/close, chips, send — UI only) | ✅ |
+| Responsive layout (mobile/tablet/desktop) | ✅ |
+| External link validation (social links, resume PDF) | ✅ |
+| Basic accessibility (lang attribute, alt text, labels, keyboard focus) | ✅ |
+| AI-generated reply content | ❌ Out of scope — see `TEST_CASES.md` |
+| Visual regression / pixel diffing | ❌ Not included |
 
-## Project structure
+See [`TEST_CASES.md`](./TEST_CASES.md) for the full test case inventory
+(IDs, steps, priority, automation status).
+
+## Project Structure
 
 ```
-playwright-portfolio-tests/
+carlo-tano-portfolio-tests/
 ├── tests/
-│   ├── pages/                  # Page Object Model
-│   │   ├── HomePage.ts         # navbar, theme switch, hero, back-to-top
-│   │   ├── ContactSection.ts   # contact form
-│   │   └── AiWidget.ts         # Carlo AI chat widget
-│   ├── fixtures/
-│   │   └── test-fixtures.ts    # wires page objects into `test`
-│   └── specs/
-│       ├── navigation.spec.ts
-│       ├── theme-toggle.spec.ts
-│       ├── contact-form.spec.ts
-│       ├── ai-widget.spec.ts
-│       ├── project-links.spec.ts
-│       ├── responsive.spec.ts
-│       └── accessibility.spec.ts
-├── .github/workflows/playwright.yml
-├── playwright.config.ts
+│   ├── smoke/               # Fast "is the site up" checks
+│   │   └── smoke.spec.js
+│   ├── functional/          # Feature-level positive coverage
+│   │   ├── navigation.spec.js
+│   │   ├── contact-form.spec.js
+│   │   ├── ai-widget.spec.js
+│   │   └── dynamic-sections.spec.js
+│   ├── negative/            # Invalid-input / error-path coverage
+│   │   └── contact-form-negative.spec.js
+│   └── regression/          # Cross-cutting: responsive, links, a11y
+│       └── regression.spec.js
+├── pages/                   # Page Object Model
+│   ├── BasePage.js
+│   ├── HomePage.js
+│   ├── ContactPage.js
+│   └── AIWidget.js
+├── test-data/
+│   └── testData.json        # Reusable, non-secret test data
+├── utils/
+│   └── linkChecker.js       # External link reachability helper
+├── playwright.config.js
 ├── package.json
-└── tsconfig.json
+├── TEST_CASES.md            # Test case inventory / QA documentation
+├── README.md
+└── .github/workflows/playwright.yml
 ```
 
-## Design decisions
-
-- **Page Object Model** — locators and interactions live in `tests/pages/`, specs only
-  describe behavior. Changing a selector means editing one file, not every spec that uses it.
-- **Fixtures over `beforeEach` boilerplate** — `homePage`, `contactSection`, and `aiWidget`
-  are injected automatically and already navigated/ready, so specs start at the interesting part.
-- **Network stubbing for the contact form** — `page.route()` intercepts the EmailJS call so the
-  suite is deterministic and doesn't send real emails on every CI run, while a separate live-link
-  check (`project-links.spec.ts`) still hits real URLs to catch actual broken links.
-- **Independent theme systems get independent specs** — the site has two separate theme
-  toggles (site-wide sky/dark switch vs. the AI widget's own scoped toggle). One spec explicitly
-  asserts they don't leak into each other, since that's an easy regression to introduce.
-- **Multi-browser + multi-viewport by default** — `playwright.config.ts` runs every spec across
-  5 browser/device projects out of the box.
-
-## Running locally
+## Installation
 
 ```bash
 npm install
 npx playwright install --with-deps
-
-# Point at the live site (default) or override for local dev:
-BASE_URL=http://localhost:5500 npm test
-
-npm run test:ui       # interactive UI mode
-npm run test:headed   # watch it run in a real browser
-npm run report        # open the last HTML report
 ```
 
-## CI
+## Run Tests
 
-`.github/workflows/playwright.yml` runs the full suite on every push/PR to `main`, plus a
-nightly scheduled run against the live URL to catch drift (e.g. an expired outbound link)
-even when no code has changed. The HTML report is uploaded as a build artifact on every run.
+```bash
+# Run the full suite (all browsers)
+npx playwright test
 
-## Coverage summary
+# Run one suite
+npm run test:smoke
+npm run test:functional
+npm run test:regression
+npm run test:negative
 
-- Navigation: section scrolling, active-link state, mobile menu, back-to-top, resume download link
-- Theme switch: dark-by-default, persistence across reload, background/photo swap, fresh-session default
-- Contact form: required-field and email-format validation, success/error states
-- AI chat widget: open/close, scoped theme toggle, clear chat, click-away-to-close
-- Project cards: link integrity (target/rel), live HTTP status checks, image load checks
-- Responsive: 4 breakpoints, no horizontal overflow, no console errors, correct nav pattern
-- Accessibility: axe-core WCAG2 A/AA scan, alt text, keyboard reachability
+# Run in a headed browser (see it happen)
+npx playwright test --headed
+
+# Interactive UI mode (best for local debugging)
+npx playwright test --ui
+
+# Run against a specific browser project
+npx playwright test --project=chromium
+npx playwright test --project=mobile-chrome
+```
+
+By default, tests run against the live site
+(`https://yantano.github.io/carlo-tano-portfolio/`). To point at a local
+copy instead:
+
+```bash
+BASE_URL=http://127.0.0.1:5500 npx playwright test
+```
+
+## Reports
+
+After a run, open the HTML report:
+
+```bash
+npx playwright show-report
+```
+
+The report includes pass/fail status, duration, browser project,
+screenshots on failure, and trace files for first-retry failures.
+
+## Running Locally in VS Code
+
+1. Install the [Playwright Test for VS Code](https://marketplace.visualstudio.com/items?itemName=ms-playwright.playwright) extension.
+2. Open this folder in VS Code.
+3. Run `npm install && npx playwright install --with-deps` in the integrated terminal.
+4. Use the Testing sidebar (flask icon) to run/debug individual tests, or run `npx playwright test --ui`.
+
+## CI/CD — GitHub Actions
+
+`.github/workflows/playwright.yml` runs on every push and pull request to
+`main` (and can be triggered manually via `workflow_dispatch`). It:
+
+1. Checks out the repo and installs Node.js 20.
+2. Installs dependencies (`npm ci`) and Playwright browsers.
+3. Runs the full test suite against the live GitHub Pages URL.
+4. Uploads the HTML report and trace/screenshot/video artifacts, even on
+   failure, so results are downloadable from the workflow run.
+
+## Test Results
+
+_Use this section to log notable test runs over time._
+
+| Date | Trigger | Result | Notes |
+|------|---------|--------|-------|
+| — | — | — | — |
+
+## Limitations
+
+See the "Known Limitations / Not Automated" section at the bottom of
+[`TEST_CASES.md`](./TEST_CASES.md) for what is intentionally out of scope
+and why (AI reply content, real email delivery, the space-cat mascot,
+visual regression, and full WCAG auditing).
