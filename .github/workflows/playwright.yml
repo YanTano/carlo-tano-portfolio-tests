@@ -10,6 +10,10 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  # Catches regressions on the live site even when nobody's pushing code —
+  # 06:00 UTC daily.
+  schedule:
+    - cron: '0 6 * * *'
 
 # Cancel a stale run automatically when a newer push/PR update supersedes it,
 # so main and PR branches don't queue up redundant runners.
