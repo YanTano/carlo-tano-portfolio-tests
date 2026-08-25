@@ -1,358 +1,72 @@
-const { test, expect } = require('@playwright/test');
+# Carlo Tano Portfolio — Playwright Tests
 
-const { AIWidget } = require('../../pages/AIWidget');
-const { SITE_URL } = require('../../utils/constants');
+Playwright test automation for https://yantano.github.io/carlo-tano-portfolio/,
+built with the Page Object Model. **This version is set up to run locally
+with Node.js — no GitHub Actions/CI yet.** Add that later once you're happy
+with local runs.
 
-test.describe('Functional: Carlo AI widget', () => {
+## 1. Install
 
-  // ============================================================
-  // BEFORE EACH TEST
-  // ============================================================
+```bash
+npm install
+npx playwright install --with-deps
+```
 
-  test.beforeEach(async ({ page }) => {
+`npx playwright install --with-deps` downloads the actual browser engines
+(Chromium/Firefox/WebKit) Playwright drives — separate from any browser
+already on your machine. On Windows/Mac this runs without extra permissions;
+on Linux it may ask for `sudo`.
 
-    await page.goto(SITE_URL, {
-      waitUntil: 'domcontentloaded',
-      timeout: 60000
-    });
+## 2. Run the tests
 
-    /*
-     * Allow the portfolio and Carlo AI widget to finish rendering.
-     */
+```bash
+# Everything
+npx playwright test
 
-    await page.waitForTimeout(3000);
+# One suite at a time
+npm run test:smoke
+npm run test:functional
+npm run test:regression
+npm run test:negative
 
-    const toggleButton = page.locator('#aiToggleBtn');
+# Watch it happen in a real browser window
+npx playwright test --headed
 
-    await expect(toggleButton).toBeVisible({
-      timeout: 15000
-    });
-  });
+# Best for learning/debugging — step through each action
+npx playwright test --ui
+```
 
+Tests run against the **live site** by default
+(`https://yantano.github.io/carlo-tano-portfolio/`). No local server needed.
 
-  // ============================================================
-  // 1. CARLO AI TOGGLE IS VISIBLE
-  // ============================================================
+## 3. View results
 
-  test('Carlo AI toggle is visible', async ({ page }) => {
+```bash
+npx playwright show-report
+```
 
-    const ai = new AIWidget(page);
+Opens an HTML report: pass/fail per test, duration, and (on failures)
+screenshots/video/trace.
 
-    await expect(ai.toggleButton).toBeVisible({
-      timeout: 15000
-    });
+## Project structure
 
-    console.log('✓ Carlo AI toggle is visible');
-  });
+```
+├── tests/
+│   ├── smoke/          # Is the site up at all
+│   ├── functional/     # Feature behavior (nav, contact form, AI widget, dynamic sections)
+│   ├── negative/       # Invalid input handling
+│   └── regression/     # Responsive layout, external links, basic accessibility
+├── pages/               # Page Object Model — one file per page/section
+├── test-data/           # Reusable JSON test data
+├── utils/                # Small shared helpers
+└── playwright.config.js
+```
 
+See [`TEST_CASES.md`](./TEST_CASES.md) for the full test case inventory.
 
-  // ============================================================
-  // 2. CARLO AI OPENED
-  // ============================================================
+## Next step: CI (once local runs are solid)
 
-  test('Carlo AI opened', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    /*
-     * Main verification:
-     * Carlo AI chat window must actually be visible.
-     */
-
-    await expect(ai.chatWindow).toBeVisible({
-      timeout: 10000
-    });
-
-    console.log('✓ Carlo AI opened');
-  });
-
-
-  // ============================================================
-  // 3. VOICE REPLIES TOGGLED
-  // ============================================================
-
-  test('Voice replies toggled', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    await ai.toggleVoiceReplies();
-
-    console.log('✓ Voice replies toggled');
-  });
-
-
-  // ============================================================
-  // 4. LIGHT / DARK MODE TOGGLED
-  // ============================================================
-
-  test('Light/Dark mode toggled', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    await ai.toggleTheme();
-
-    console.log('✓ Light/Dark mode toggled');
-  });
-
-
-  // ============================================================
-  // 5. FIRST TEST MESSAGE ENTERED
-  // ============================================================
-
-  test('First test message entered', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    const message = 'sample test sample test';
-
-    await ai.enterMessage(message);
-
-    await expect(ai.input).toHaveValue(message);
-
-    console.log('✓ First test message entered');
-  });
-
-
-  // ============================================================
-  // 6. CHAT CLEARED
-  // ============================================================
-
-  test('Chat cleared', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    const message = 'sample test sample test';
-
-    await ai.enterMessage(message);
-
-    await expect(ai.input).toHaveValue(message);
-
-    await ai.clearChat();
-
-    /*
-     * IMPORTANT:
-     *
-     * The Carlo AI website clears the conversation,
-     * but the textarea may retain its current value.
-     *
-     * Therefore we do NOT use:
-     *
-     * await expect(ai.input).toHaveValue('');
-     *
-     * because that does not represent the actual behavior
-     * of the Clear Chat function on the website.
-     */
-
-    await expect(ai.chatWindow).toBeVisible({
-      timeout: 10000
-    });
-
-    console.log('✓ Chat cleared');
-  });
-
-
-  // ============================================================
-  // 7. TELL ME ABOUT CARLO
-  // ============================================================
-
-  test('"Tell me about Carlo" selected', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    await ai.clickSuggestion('tell me about carlo');
-
-    console.log('✓ "Tell me about Carlo" selected');
-  });
-
-
-  // ============================================================
-  // 8. QA EXPERIENCE
-  // ============================================================
-
-  test('"QA Experience" selected', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    await ai.clickSuggestion('qa experience');
-
-    console.log('✓ "QA Experience" selected');
-  });
-
-
-  // ============================================================
-  // 9. SHOW HIS PROJECT
-  // ============================================================
-
-  test('"Show his project" selected', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    await ai.clickSuggestion('show his project');
-
-    console.log('✓ "Show his project" selected');
-  });
-
-
-  // ============================================================
-  // 10. SECOND TEST MESSAGE ENTERED
-  // ============================================================
-
-  test('Second test message entered', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    const message = 'sample test sample test';
-
-    await ai.enterMessage(message);
-
-    await expect(ai.input).toHaveValue(message);
-
-    console.log('✓ Second test message entered');
-  });
-
-
-  // ============================================================
-  // 11. SEND BUTTON CLICKED
-  // ============================================================
-
-  test('Send button clicked', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    const message = 'sample test sample test';
-
-    await ai.enterMessage(message);
-
-    await expect(ai.input).toHaveValue(message);
-
-    await expect(ai.sendButton).toBeVisible({
-      timeout: 10000
-    });
-
-    await ai.sendButton.click({
-      force: true
-    });
-
-    console.log('✓ Send button clicked');
-  });
-
-
-  // ============================================================
-  // 12. SEND COMPLETED
-  // ============================================================
-
-  test('Send completed', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    const message = 'sample test sample test';
-
-    await ai.enterMessage(message);
-
-    await expect(ai.input).toHaveValue(message);
-
-    await ai.sendButton.click({
-      force: true
-    });
-
-    /*
-     * Carlo may retain the input value after sending.
-     *
-     * We intentionally do NOT assert:
-     *
-     * await expect(ai.input).toHaveValue('');
-     */
-
-    await page.waitForTimeout(1500);
-
-    await expect(ai.chatWindow).toBeVisible({
-      timeout: 10000
-    });
-
-    console.log('✓ Send completed');
-  });
-
-
-  // ============================================================
-  // 13. VOICE INPUT CLICKED
-  // ============================================================
-
-  test('Voice input clicked', async ({ page }) => {
-
-    const ai = new AIWidget(page);
-
-    await ai.open();
-
-    const voiceInput = await ai.findVoiceInput();
-
-    expect(
-      voiceInput,
-      'Carlo AI voice input button should exist'
-    ).not.toBeNull();
-
-    await ai.clickVoiceInput();
-
-    console.log('✓ Voice input clicked');
-
-    /*
-     * Optional diagnostic information.
-     *
-     * This does not fail the test because different browsers
-     * and implementations may expose different voice states.
-     */
-
-    try {
-
-      const ariaPressed =
-        await voiceInput.getAttribute('aria-pressed');
-
-      const className =
-        await voiceInput.getAttribute('class');
-
-      const title =
-        await voiceInput.getAttribute('title');
-
-      const dataRecording =
-        await voiceInput.getAttribute('data-recording');
-
-      console.log('Voice input state:', {
-        ariaPressed,
-        className,
-        dataRecording,
-        title
-      });
-
-    } catch (error) {
-      // Diagnostic information only.
-    }
-
-    await expect(ai.chatWindow).toBeVisible({
-      timeout: 10000
-    });
-
-    console.log('✓ Voice input test passed');
-  });
-
-});
+When you're ready to automate this on every push, add a
+`.github/workflows/playwright.yml` that runs `npm ci`,
+`npx playwright install --with-deps`, then `npx playwright test`. Ask me for
+that file when you get there — better to get local runs 100% green first.
