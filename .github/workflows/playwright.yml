@@ -1,0 +1,86 @@
+name: Playwright Tests
+
+# Trigger matrix required by the project:
+#   - every push to main
+#   - every PR targeting main
+#   - on-demand runs from the Actions tab
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel a stale run automatically when a newer push/PR update supersedes it,
+# so main and PR branches don't queue up redundant runners.
+concurrency:
+  group: playwright-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least-privilege default: this workflow only reads the repo and uploads
+# artifacts, it never needs to write back to it.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Run Playwright test suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      # Node 20 satisfies the project's "engines": { "node": ">=20" }
+      # requirement (see package-lock.json / @playwright/test) and is an
+      # active LTS line, so it's the safest pin for reproducible CI runs.
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # npm ci installs exactly what's pinned in package-lock.json —
+      # required (not npm install) so CI is byte-for-byte reproducible.
+      - name: Install dependencies
+        run: npm ci
+
+      # --with-deps also apt-installs the Linux shared libraries Chromium,
+      # Firefox and WebKit need on the Ubuntu runner (this is where all four
+      # configured projects - chromium, firefox, webkit, mobile-chrome -
+      # get their browser binaries from; mobile-chrome reuses the Chromium
+      # download under a Pixel 7 device profile).
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      # Runs every project defined in playwright.config.js in one pass.
+      # forbidOnly / retries / workers are already environment-aware inside
+      # playwright.config.js via process.env.CI, which GitHub Actions sets
+      # automatically - nothing to duplicate here.
+      - name: Run Playwright tests
+        run: npx playwright test
+        env:
+          BASE_URL: https://yantano.github.io/carlo-tano-portfolio/
+
+      # Always publish the HTML report, pass or fail, so a green run is
+      # just as reviewable as a red one.
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      # test-results/ only gets populated on failure (screenshots, videos,
+      # traces per playwright.config.js's use: block), so an all-green run
+      # legitimately has nothing here - don't fail the job over that.
+      - name: Upload failure artifacts (traces, screenshots, videos)
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 14
+          if-no-files-found: ignore
