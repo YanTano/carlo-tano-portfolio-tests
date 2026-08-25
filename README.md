@@ -1,5 +1,7 @@
 # Carlo Tano Portfolio — Playwright Tests
 
+[![Playwright Tests](https://github.com/YanTano/carlo-tano-portfolio-tests/actions/workflows/playwright.yml/badge.svg)](https://github.com/YanTano/carlo-tano-portfolio-tests/actions/workflows/playwright.yml)
+
 Playwright test automation for https://yantano.github.io/carlo-tano-portfolio/,
 built with the Page Object Model, running locally **and** in GitHub Actions CI.
 
@@ -92,9 +94,11 @@ workflow artifact — see below.
 
 ## CI/CD architecture
 
-Every push to `main`, every pull request targeting `main`, and any manual
-run from the **Actions** tab trigger `.github/workflows/playwright.yml`,
-which runs on a single `ubuntu-latest` job:
+Every push to `main`, every pull request targeting `main`, any manual run
+from the **Actions** tab, and a daily 06:00 UTC schedule (catches
+regressions on the live site even with no code changes) trigger
+`.github/workflows/playwright.yml`, which runs on a single `ubuntu-latest`
+job:
 
 1. **Checkout** the repository (`actions/checkout@v6`).
 2. **Set up Node.js 20** with npm's dependency cache enabled (`actions/setup-node@v6`)
@@ -137,12 +141,16 @@ All four run in the same CI job, matching local `npx playwright test`.
     └── playwright.yml
 ```
 
-Triggers: `push` to `main`, `pull_request` targeting `main`, and manual
-`workflow_dispatch`. See the file itself for the full step-by-step pipeline
-described above.
+Triggers: `push` to `main`, `pull_request` targeting `main`, manual
+`workflow_dispatch`, and a daily `schedule` (06:00 UTC). See the file itself
+for the full step-by-step pipeline described above.
 
 ## Test reporting
 
+- **Real-time status:** the badge at the top of this README reflects the
+  live state of the most recent run — queued/running/pass/fail — pulled
+  directly from GitHub Actions, no manual refresh needed. Click it (or the
+  **Actions** tab) to watch a run in progress step-by-step.
 - **Local:** `npx playwright show-report` opens the HTML report generated
   under `playwright-report/`.
 - **CI:** the same `playwright-report/` folder is uploaded as the
